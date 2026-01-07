@@ -1,88 +1,33 @@
-import mongoose from 'mongoose'
 import express from 'express'
-import studentModel from './model/studentModel.js';
-
+import multer from 'multer';
 const app = express();
-//middleware to get req.body in console
-app.use(express.json())
 
-//.connect to connect mongoose with the database
-await mongoose.connect("mongodb://localhost:27017/test")
-console.log("conected.......");
-
-app.get("/",async (req,res)=>{
-
-    const studentData= await studentModel.find()
-    res.send(studentData)
-})
-
-app.post("/save",async (req,res)=>{
-    console.log(req.body);
-    const {name,age,email} =req.body;
-   //validation to check the conditions
-    if(!req.body || !name || !age || !email){
-          
-    res.send({
-        message:"data not stored",
-        success:false,
-        storedInfo:null
-
-    })
-    return false
-
+const storage = multer.diskStorage({
+    destination:function(req,file,cd){
+        cd(null,'upload')
+    },
+    filename:function(req,file,cd){
+        cd(null,file.originalname)
     }
-
-    const studentData = await studentModel.create(req.body)
-
-
-    res.send({
-        message:"data stored",
-        success:true,
-        storedInfo:studentData
-
-    })
-})
-
-app.put("/update/:id",async(req,res)=>{
-    const id = req.params.id;
-    console.log(req.body);
-    const studentData = await studentModel.findByIdAndUpdate(id,{
-        ...req.body
-    })
-    res.send({
-        message:"data updated",
-        success:true,
-        info:studentData
-    })
-})
-
-app.delete("/delete/:id",async(req,res)=>{
-    const id = req.params.id;
-    console.log(req.body);
-    const studentData = await studentModel.findByIdAndDelete(id,{
-        ...req.body
-    })
-    res.send({
-        message:"data deleted",
-        success:true,
-        info:studentData
-    })
 })
 
 
-app.listen(3200);
+const upload = multer({storage})
 
+app.get("/",(req,res)=>{
+    res.send(`
+        <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="myfile" />
+        <button>upload file</button>
+        </form>
+        `)
+})
 
-// async function dbConnection(){
-//     await mongoose.connect("mongodb://localhost:27017/test");
-//     const schema = mongoose.Schema({
-//         name:String,
-//         age:Number,
-//         email:String
-//     })
-//     const studentsModel = mongoose.model('students',schema);
-//     const result = await studentsModel.find();
-//     console.log(result);
-    
-// }
-// dbConnection();
+app.post("/upload",upload.single('myfile'),(req,res)=>{
+    res.send({
+        message:"file uploaded",
+        info:req.file
+    })
+})
+
+app.listen(3000)
